@@ -42,7 +42,7 @@ LIMIT 1;
 --     b. Which specialty had the most total number of claims for opioids?
 SELECT 
 	prescriber.specialty_description,
-	SUM(prescription.total_claim_count::money) AS total_claim
+	SUM(prescription.total_claim_count) AS total_claim
 FROM prescriber
 	INNER JOIN prescription USING (npi)
 	INNER JOIN drug USING(drug_name)
@@ -58,6 +58,25 @@ FROM prescriber
 	FULL JOIN prescription USING(npi)
 WHERE prescription.npi IS NULL;
 --     d. **Difficult Bonus:** *Do not attempt until you have solved all other problems!* For each specialty, report the percentage of total claims by that specialty which are for opioids. Which specialties have a high percentage of opioids?
+
+
+WITH opioid_specialty AS(SELECT 
+								prescriber.specialty_description,
+								SUM(prescription.total_claim_count) AS total_claim
+						  FROM prescriber
+								INNER JOIN prescription USING (npi)
+								INNER JOIN drug USING(drug_name)
+						  WHERE drug.opioid_drug_flag = 'Y'
+						  GROUP BY prescriber.specialty_description)
+SELECT 
+	prescriber.specialty_description,
+	ROUND(opioid_specialty.total_claim/SUM(prescription.total_claim_count) * 100, 2) AS opioid_claim_percent
+FROM prescriber
+	LEFT JOIN opioid_specialty USING(specialty_description)
+	INNER JOIN prescription USING(npi)
+GROUP BY prescriber.specialty_description, total_claim
+ORDER BY opioid_claim_percent DESC NULLs LAST;
+
 
 
 
